@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Último Botín</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+        
+        :root {
+            --bg-color: #110f0e; --accent-color: #b58b4c; --text-color: #e6dfd5;
+            --card-w: 75px; --card-h: 105px;
+        }
+
+        body {
+            background-color: var(--bg-color); color: var(--text-color);
+            font-family: 'Courier Prime', monospace; overflow: hidden; touch-action: none;
+            user-select: none; -webkit-user-select: none;
+            background-image: radial-gradient(circle at 50% 50%, #1f1b18 0%, #0a0908 100%);
+        }
+
+        .font-typewriter { font-family: 'Courier Prime', monospace; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .tape {
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg);
+            width: 45px; height: 18px; background-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2); backdrop-filter: blur(2px); z-index: 10;
+        }
+
+        /* Skin Botin (Básica) */
+        .skin-botin-bg { background-color: #166534; } .skin-botin-border { border-color: #14532d; }
+        .skin-botin-text { color: #f0fdf4; }
+        .skin-botin-shadow { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,0.1); }
+        .skin-botin-back { background-color: #1a1715; border-color: var(--accent-color); }
+        
+        .card { width: var(--card-w); height: var(--card-h); position: relative; border-radius: 6px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); touch-action: none; cursor: pointer; }
+        
+        .modal-overlay { background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(5px); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 200; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .pulse-red { animation: pulseRed 2s infinite; }
+        @keyframes pulseRed { 0% { box-shadow: inset 0 0 0 rgba(220,38,38,0); } 50% { box-shadow: inset 0 0 50px rgba(220,38,38,0.3); } 100% { box-shadow: inset 0 0 0 rgba(220,38,38,0); } }
+
+        /* NUEVAS ANIMACIONES FLUIDAS DE ZONA */
+        .glow-half-player {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
+            background: linear-gradient(to top, rgba(34,197,94,0.3) 0%, transparent 100%);
+            pointer-events: none; z-index: 10; opacity: 0;
+            animation: glowPulse 2s ease-out forwards;
+        }
+        .glow-half-capo {
+            position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+            background: linear-gradient(to bottom, rgba(239,68,68,0.3) 0%, transparent 100%);
+            pointer-events: none; z-index: 10; opacity: 0;
+            animation: glowPulse 2s ease-out forwards;
+        }
+        @keyframes glowPulse { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* NUEVO SISTEMA DE PUNTOS VOLADORES */
+        .flying-point {
+            position: fixed; z-index: 9999;
+            font-family: 'Playfair Display', serif; font-weight: 900; font-size: 2.5rem;
+            pointer-events: none; opacity: 0;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.8), 0 0 15px currentColor;
+            transition: left 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        top 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                        transform 0.6s ease, opacity 0.2s ease;
+        }
+
+        @keyframes popIn { 0% { transform: translateY(-50%) scale(0.5); opacity: 0; } 100% { transform: translateY(-50%) scale(1); opacity: 1; } }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes dealHand { 0% { transform: translate(-100px, -400px) scale(0.2) rotate(-180deg); opacity: 0; } }
+        @keyframes dealCapo { 0% { transform: translate(-100px, 150px) scale(0.2) rotate(-90deg); opacity: 0; } }
+        .deal-anim-hand { animation: dealHand 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards; }
+        .deal-anim-capo { animation: dealCapo 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards; }
+
+        .stamp { border: 3px solid rgba(220, 38, 38, 0.6); color: rgba(220, 38, 38, 0.6); font-family: 'Courier Prime', monospace; font-weight: bold; font-size: 1.25rem; text-transform: uppercase; padding: 2px 8px; transform: rotate(-15deg); pointer-events: none; }
+        
+        /* Capo Mafioso CSS Completo */
+        .capo-avatar { width: 70px; height: 85px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.8)); }
+        .capo-head { width: 44px; height: 42px; background-color: #fca5a5; border-radius: 4px; position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; border: 1px solid #7f1d1d; }
+        .capo-glasses { width: 38px; height: 14px; background-color: #000; margin-top: 12px; border-radius: 1px; box-shadow: inset 0 2px 4px rgba(255,255,255,0.2); }
+        .capo-cigar { width: 18px; height: 6px; background-color: #78350f; position: absolute; bottom: 6px; right: -10px; transform: rotate(-15deg); border-radius: 2px; border-right: 3px solid #ef4444; box-shadow: 2px 0 8px rgba(239,68,68,0.9); z-index: 15; }
+        .capo-hat-brim { width: 72px; height: 8px; background-color: #1c1917; position: absolute; top: 0px; z-index: 20; border-radius: 3px; box-shadow: 0 6px 10px rgba(0,0,0,0.7); border-bottom: 1px solid #44403c; }
+        .capo-hat-top { width: 42px; height: 24px; background-color: #1c1917; position: absolute; top: -20px; z-index: 15; border-radius: 8px 8px 0 0; border-bottom: 5px solid #f8fafc; }
+        .capo-body { width: 66px; height: 28px; background-color: #1c1917; position: relative; z-index: 5; border-radius: 4px 4px 0 0; overflow: hidden; display: flex; justify-content: center; background-image: repeating-linear-gradient(90deg, #1c1917, #1c1917 2px, #292524 2px, #292524 3px); border: 1px solid #000; border-bottom: none;}
+        .capo-shirt { width: 20px; height: 100%; background-color: #111827; display: flex; justify-content: center; border-left: 1px solid #000; border-right: 1px solid #000; }
+        .capo-tie { width: 6px; height: 100%; background-color: #dc2626; border-left: 1px solid #991b1b; }
+        .capo-label { position: absolute; bottom: -12px; background-color: #7f1d1d; color: white; font-family: 'Courier Prime', monospace; font-size: 8px; font-weight: bold; padding: 2px 14px; border: 1px solid #450a0a; border-radius: 2px; white-space: nowrap; z-index: 30; box-shadow: 0 2px 4px rgba(0,0,0,0.5); letter-spacing: 1px;}
+    </style>
+</head>
+<body class="text-xs">
+
+    <!-- LOBBY SCREEN -->
+    <div id="lobby-screen" class="absolute inset-0 z-[100] flex flex-col bg-[var(--bg-color)] overflow-hidden">
+        <div class="w-full flex justify-between items-start px-4 pt-6">
+            <div class="flex gap-2">
+                <button class="text-stone-400 text-2xl px-2 active:scale-95"><i class="fa-solid fa-angle-left"></i></button>
+                <button onclick="startTutorial()" class="bg-[#1a1715] text-[var(--accent-color)] border border-stone-700 w-9 h-9 rounded flex items-center justify-center active:scale-95 shadow-md"><i class="fa-solid fa-graduation-cap"></i></button>
+            </div>
+            
+            <div id="wallet-container" class="bg-[#2a2624] rounded px-4 py-2 border border-[#3a3634] shadow-md flex items-center gap-3 cursor-pointer active:scale-95 transition-transform" onclick="toggleAudio()">
+                <div class="flex items-center gap-2 border-r border-[#4a4644] pr-3 relative">
+                    <i class="fa-solid fa-coins text-yellow-500 text-lg"></i>
+                    <span id="lobby-gold" class="font-display font-black text-white text-lg tracking-widest transition-colors duration-300">3000</span>
+                </div>
+                <span id="btn-audio" class="text-white bg-black/30 p-1.5 rounded-full w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-volume-high"></i></span>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center mt-6 w-full px-6">
+            <div class="relative bg-[#f0ebd8] text-black p-3 w-full max-w-sm shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform -rotate-1 border border-stone-300">
+                <div class="tape"></div>
+                <div class="flex items-center gap-4 mt-2">
+                    <div class="w-14 h-14 bg-stone-800 flex items-center justify-center border-2 border-stone-400 shadow-inner"><i class="fa-solid fa-user-secret text-4xl text-[#e6dfd5]"></i></div>
+                    <div>
+                        <div class="font-typewriter font-bold tracking-widest text-xl uppercase leading-tight text-stone-900">Ladrón</div>
+                        <div class="font-display text-[11px] text-red-700 font-black tracking-widest mt-1">NIVEL 1</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-center items-center gap-4 mt-8 px-2 h-32 relative z-10">
+            <div onclick="selectDeck(40)" class="relative bg-[#f0ebd8] text-stone-900 p-4 w-44 h-28 transform -rotate-2 cursor-pointer shadow-xl transition-all hover:scale-105 active:scale-95 border border-stone-300 flex flex-col justify-between">
+                <div>
+                    <div class="text-[8px] font-typewriter text-stone-500 uppercase tracking-widest mb-1 border-b border-stone-300 pb-1">Expediente A</div>
+                    <div class="font-typewriter font-bold text-xl flex items-center gap-2 mt-2"><i class="fa-solid fa-bolt text-red-700"></i> BLITZ</div>
+                </div>
+                <div class="text-[10px] font-typewriter font-bold text-stone-600 mt-auto">Meta: 30 pts</div>
+                <div id="stamp-40" class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="stamp">Selección</div></div>
+            </div>
+
+            <div onclick="selectDeck(60)" class="relative bg-[#dcd7c6] text-stone-700 p-4 w-44 h-28 transform rotate-2 cursor-pointer shadow-md transition-all hover:scale-105 active:scale-95 border border-stone-400 flex flex-col justify-between">
+                <div>
+                    <div class="text-[8px] font-typewriter text-stone-500 uppercase tracking-widest mb-1 border-b border-stone-400 pb-1">Expediente B</div>
+                    <div class="font-typewriter font-bold text-xl flex items-center gap-2 mt-2"><i class="fa-solid fa-chess-rook text-stone-700"></i> CLÁSICO</div>
+                </div>
+                <div class="text-[10px] font-typewriter font-bold text-stone-600 mt-auto">Meta: 50 pts</div>
+                <div id="stamp-60" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden"><div class="stamp">Selección</div></div>
+            </div>
+        </div>
+
+        <!-- Tarjeta Central: Mesas de Botín -->
+        <div class="mt-4 flex flex-col items-center w-full px-6 relative z-20">
+            <div id="btn-mesas-card" onclick="openMesas()" class="relative bg-[#f0ebd8] text-stone-900 p-3 w-64 transform rotate-1 cursor-pointer shadow-xl transition-all hover:scale-105 active:scale-95 border border-stone-300 flex flex-col items-center">
+                <div class="tape" style="top: -8px; width: 45px;"></div>
+                <div class="text-[9px] font-typewriter text-stone-500 uppercase tracking-widest mb-2 border-b border-stone-300 w-full text-center pb-1">Identificar Objetivos</div>
+                
+                <!-- Silueta de la Mesa Clandestina -->
+                <div class="flex items-end justify-center gap-2 my-2 opacity-80 h-12">
+                    <i class="fa-solid fa-user-secret text-2xl text-stone-700 transform translate-y-1"></i>
+                    <div class="w-16 h-6 bg-stone-800 rounded-t-full flex items-end justify-center border border-stone-600 shadow-inner relative overflow-hidden">
+                        <div class="w-full h-1 bg-green-900 absolute top-1"></div>
+                        <i class="fa-solid fa-coins text-yellow-500/50 text-[10px] transform -translate-y-1"></i>
+                    </div>
+                    <i class="fa-solid fa-user-ninja text-2xl text-stone-700 transform translate-y-1"></i>
+                </div>
+                
+                <div class="font-typewriter font-bold text-xl mt-1 text-red-800 tracking-widest uppercase">Mesas de Apuesta</div>
+                <div class="text-[9px] font-typewriter font-bold text-stone-600 mt-1 uppercase">El ganador se lleva el pozo</div>
+            </div>
+        </div>
+
+        <div class="mt-auto flex flex-col items-center w-full relative z-10 pb-[90px]">
+            <div class="text-[10px] font-typewriter uppercase tracking-widest text-stone-400 mb-2">Partida Amistosa (Gratis)</div>
+            <button onclick="startGame(true)" class="w-[85%] max-w-sm bg-[#1a1715] border border-[#b58b4c] text-[var(--accent-color)] font-typewriter font-bold text-2xl py-5 rounded-md uppercase tracking-widest shadow-[0_0_30px_rgba(181,139,76,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all active:scale-95 hover:bg-[#25201c]">
+                <i class="fa-solid fa-lock-open mr-2 text-[var(--accent-color)]"></i> Abrir Golpe
+            </button>
+        </div>
+
+        <div class="absolute bottom-0 w-full flex justify-between items-end px-4 pb-4 bg-gradient-to-t from-black to-transparent pt-12 pointer-events-none">
+            <button onclick="openAlmacen()" class="pointer-events-auto bg-gradient-to-b from-[#e6c280] to-[#b58b4c] text-black font-display font-black uppercase tracking-widest text-[12px] px-8 py-3 rounded-sm shadow-[0_4px_10px_rgba(0,0,0,0.5)] active:scale-95 transition-transform">Almacén</button>
+            <button class="pointer-events-auto bg-gradient-to-b from-[#4a4644] to-[#2a2624] text-stone-400 font-display font-black uppercase tracking-widest text-[12px] px-8 py-3 rounded-sm shadow-[0_4px_10px_rgba(0,0,0,0.5)] opacity-50 cursor-not-allowed">Encargos</button>
+        </div>
+    </div>
+
+    <!-- GAME BOARD ESTRUCTURA ESTRICTA POR BLOQUES -->
+    <div id="game-board" class="hidden absolute inset-0 flex flex-col bg-[var(--bg-color)] overflow-hidden">
+        
+        <!-- MESA SUPERIOR (Capo + Timeline + Tu Apuesta) -->
+        <div class="w-full flex-1 flex flex-col relative z-20">
+            <!-- Header Tablero -->
+            <div class="w-full flex justify-between items-start p-4 relative z-50 shrink-0">
+                <div class="flex flex-col w-1/3">
+                    <div class="font-typewriter text-lg font-bold tracking-widest uppercase drop-shadow-md text-stone-300 leading-none">Último<br>Botín</div>
+                    <div class="font-typewriter text-[7px] text-stone-500 tracking-widest mt-2 uppercase">Ronda <span id="b-round-counter">1</span> / <span id="b-round-total">15</span></div>
+                </div>
+                <div class="w-1/3 flex flex-col items-center justify-start relative transition-transform duration-200">
+                    <div class="bg-[#1a1a1a] border border-stone-700 rounded py-2 px-6 min-w-[90px] flex justify-center items-center shadow-lg transition-transform duration-200">
+                        <div class="font-typewriter font-bold text-lg tracking-widest text-[var(--accent-color)] flex items-center justify-center gap-4 w-full">
+                            <span id="b-score-p1" class="transition-colors duration-200">0</span><span class="text-stone-600 text-xs">-</span><span id="b-score-p2" class="transition-colors duration-200">0</span>
+                        </div>
+                    </div>
+                    <div class="absolute -top-3 text-[5px] font-typewriter text-stone-500 uppercase tracking-widest bg-[#110f0e] px-1">Dif. 0-1 Ganas Tú</div>
+                </div>
+                <div class="flex gap-2 w-1/3 justify-end">
+                    <button id="btn-audio-board" onclick="toggleAudio()" class="w-9 h-9 rounded bg-white flex items-center justify-center text-black shadow-lg active:scale-95"><i class="fa-solid fa-volume-high"></i></button>
+                    <button onclick="surrender()" class="w-9 h-9 rounded bg-white flex items-center justify-center text-red-600 shadow-lg active:scale-95"><i class="fa-solid fa-flag"></i></button>
+                </div>
+            </div>
+
+            <!-- Contenedor Principal Central -->
+            <div class="flex-1 flex flex-col justify-center relative w-full mb-8">
+                
+                <!-- Mazos y Descarte Anclados al centro vertical -->
+                <div class="absolute left-1 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 z-30 scale-[0.65] origin-left">
+                    <div class="relative w-[var(--card-w)] h-[var(--card-h)] shadow-xl">
+                        <div class="absolute -top-2 -right-3 bg-white text-black text-[10px] font-typewriter font-bold px-2 py-0.5 rounded border border-stone-400 shadow-md z-20" id="b-deck-count">40</div>
+                        <div id="visual-deck-container" class="w-full h-full"></div>
+                    </div>
+                    <div class="relative w-[var(--card-w)] h-[var(--card-h)] cursor-pointer" onclick="showDiscard()">
+                        <div class="absolute -top-2 -right-3 bg-stone-800 text-stone-400 text-[10px] font-typewriter px-2 py-0.5 rounded border border-stone-600 z-20" id="b-discard-count">0</div>
+                        <div id="visual-discard-top" class="w-full h-full transition-transform active:scale-95"></div>
+                    </div>
+                </div>
+
+                <!-- Capo Zone -->
+                <div class="flex flex-col items-center w-full relative">
+                    <div class="flex items-center justify-center relative w-full mb-6">
+                        <div class="relative flex flex-col items-center justify-center">
+                            <div class="capo-avatar">
+                                <div class="capo-hat-top"></div>
+                                <div class="capo-hat-brim"></div>
+                                <div class="capo-head"><div class="capo-glasses"></div></div>
+                                <div class="capo-cigar"></div>
+                                <div class="capo-body"><div class="capo-shirt"><div class="capo-tie"></div></div></div>
+                                <div class="capo-label">EL CAPO</div>
+                            </div>
+                            <div class="absolute top-0 -right-6 bg-white text-black text-[10px] font-typewriter font-bold px-2 py-0.5 rounded shadow-md border border-stone-300 z-40 flex items-center">
+                                <span id="b-capo-hand-count">4</span> <i class="fa-regular fa-clone ml-1 text-[8px]"></i>
+                            </div>
+                        </div>
+                        <!-- Ventajas del Capo (Fijas a la derecha de la pantalla) -->
+                        <div id="perks-p2-container" style="display:none;" class="absolute right-4 top-1/2 -translate-y-1/2">
+                            <button id="btn-perks-p2" onclick="inspectPerks('bot')" class="border border-red-900 rounded-sm px-2 py-2 flex flex-col items-center justify-center bg-[#1a1a1a] active:scale-95 shadow-md w-[45px]">
+                                <div class="text-[5px] font-typewriter text-red-500 uppercase tracking-widest font-bold"><i class="fa-solid fa-star mr-0.5"></i> CAPO</div>
+                                <div class="text-[6px] font-typewriter text-stone-500 font-bold mt-1" id="inspector-p2-count">(0)</div>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Cartas Jugadas Capo Container -->
+                    <div class="w-full relative flex justify-center items-center h-[105px]">
+                        <div class="flex justify-center items-center gap-3 w-full" id="b-capo-play"></div>
+                    </div>
+                </div>
+
+                <!-- Timeline Central -->
+                <div class="w-full relative flex items-center justify-center my-4 shrink-0 h-[30px]">
+                    <div class="h-[1px] bg-stone-700 w-full absolute"></div>
+                    <div id="timeline-pill" class="px-5 py-2 rounded-full bg-[var(--accent-color)] text-black text-[9px] font-typewriter font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(181,139,76,0.3)] z-10 flex items-center justify-center transition-all duration-300 min-w-[140px]">
+                        <span id="timeline-text" class="flex items-center gap-2 text-center leading-none">TU TURNO <span id="b-timer" class="bg-black/20 px-2 py-1 rounded ml-1">30s</span></span>
+                    </div>
+                </div>
+
+                <!-- Tu Zona de Apuesta -->
+                <div class="flex flex-col items-center w-full relative z-20 pb-2">
+                    <div class="text-[7px] font-typewriter text-stone-500 uppercase tracking-widest mb-2">TU APUESTA (MÁX. 3)</div>
+                    <div class="w-full relative flex justify-center items-center h-[105px]">
+                        <div class="flex justify-center items-center gap-3 w-full" id="b-player-play"></div>
+                        <!-- Tus Ventajas (Fijas a la derecha de la pantalla) -->
+                        <div id="perks-p1-container" style="display:none;" class="absolute right-4 top-1/2 -translate-y-1/2 mt-2">
+                            <button id="btn-perks-p1" onclick="inspectPerks('player')" class="border border-[var(--accent-color)] rounded-sm py-2 px-1 flex flex-col items-center justify-center bg-[#1a1a1a] active:scale-95 shadow-md w-[45px]">
+                                <div class="text-[5px] font-typewriter text-[var(--accent-color)] uppercase tracking-widest font-bold"><i class="fa-solid fa-star mr-0.5"></i> TUS</div>
+                                <div class="text-[6px] font-typewriter text-stone-500 font-bold mt-1" id="inspector-p1-count">(0)</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL INFERIOR SEGURO (Botones + Mano) -->
+        <div class="w-full flex flex-col items-center justify-end z-[60] bg-transparent pb-16 shrink-0 relative">
+            <!-- Botonera Fija -->
+            <div class="w-full max-w-[320px] flex justify-between items-center gap-2 mb-4 px-4 relative z-[70]">
+                <button id="btn-b-cycle" onclick="cycleHand()" class="bg-white text-black h-10 w-1/3 rounded-sm text-[9px] font-typewriter font-bold uppercase shadow-xl active:scale-95 transition-all flex items-center justify-center opacity-50 pointer-events-none">
+                    <i class="fa-solid fa-folder-open mr-2 text-stone-500"></i> Ciclar
+                </button>
+                <button id="btn-b-confirm" onclick="confirmBotinacoPlay()" class="bg-white text-black h-10 w-2/3 rounded-sm text-[9px] font-typewriter font-bold uppercase shadow-2xl active:scale-95 transition-all tracking-widest flex items-center justify-center opacity-50 pointer-events-none">
+                    <i class="fa-solid fa-check mr-2 text-green-600"></i> Confirmar
+                </button>
+            </div>
+            
+            <!-- Mano de Cartas Fija -->
+            <div class="relative w-full max-w-md h-[105px] flex justify-center items-end" id="b-hand"></div>
+            <div class="text-[6px] font-typewriter text-stone-600 uppercase tracking-widest mt-4 opacity-70">TOCA LA CARTA PARA JUGARLA O ARRASTRA</div>
+        </div>
+    </div>
+
+    <!-- NUEVO MODAL: MESAS DE BOTÍN (ESTILO EXPEDIENTE) -->
+    <div id="modal-mesas" class="modal-overlay fixed inset-0 flex flex-col items-center justify-center z-[200]">
+        <div class="bg-[#f0ebd8] rounded border-2 border-stone-400 p-6 w-[90%] max-w-sm relative shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+            <div class="tape" style="top: -12px; width: 60px;"></div>
+            <button onclick="closeMesas()" class="absolute top-3 right-4 text-stone-500 hover:text-stone-800 text-2xl active:scale-95"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="font-typewriter font-black text-2xl text-stone-900 uppercase tracking-widest mb-1 text-center border-b border-stone-300 pb-2">Archivos<br>Clandestinos</h2>
+            <div class="text-stone-600 mb-6 font-typewriter text-[9px] text-center uppercase tracking-widest mt-2 leading-tight">Misiones de alto riesgo.<br>El ganador se lleva el pozo completo.</div>
+
+            <div class="flex flex-col gap-4 w-full">
+                <!-- Mesa 100 -->
+                <button onclick="joinTable(100)" class="relative bg-[#e8e3d0] border border-stone-400 p-4 shadow-md flex items-center justify-between active:scale-95 transition-all text-left group hover:bg-[#e0dbc5]">
+                    <div class="flex flex-col">
+                        <span class="font-typewriter font-bold text-stone-800 text-[12px] tracking-widest uppercase"><i class="fa-solid fa-building-shield text-stone-500 mr-2 group-hover:text-stone-800 transition-colors"></i>El Callejón</span>
+                        <span class="font-typewriter font-bold text-stone-600 text-[9px] mt-1 bg-stone-300/50 px-2 py-0.5 rounded-sm inline-block">Entrada: 100G</span>
+                    </div>
+                    <div class="flex flex-col items-end border-l border-stone-400 pl-4">
+                        <span class="font-typewriter text-stone-500 text-[7px] tracking-widest uppercase mb-1">Pozo Total</span>
+                        <span class="font-display font-black text-green-700 text-2xl drop-shadow-sm leading-none">200</span>
+                    </div>
+                </button>
+                
+                <!-- Mesa 500 -->
+                <button onclick="joinTable(500)" class="relative bg-[#e8e3d0] border border-stone-400 p-4 shadow-md flex items-center justify-between active:scale-95 transition-all text-left group hover:bg-[#e0dbc5]">
+                    <div class="flex flex-col">
+                        <span class="font-typewriter font-bold text-stone-800 text-[12px] tracking-widest uppercase"><i class="fa-solid fa-martini-glass-citrus text-stone-500 mr-2 group-hover:text-stone-800 transition-colors"></i>Club Nocturno</span>
+                        <span class="font-typewriter font-bold text-stone-600 text-[9px] mt-1 bg-stone-300/50 px-2 py-0.5 rounded-sm inline-block">Entrada: 500G</span>
+                    </div>
+                    <div class="flex flex-col items-end border-l border-stone-400 pl-4">
+                        <span class="font-typewriter text-stone-500 text-[7px] tracking-widest uppercase mb-1">Pozo Total</span>
+                        <span class="font-display font-black text-green-700 text-2xl drop-shadow-sm leading-none">1000</span>
+                    </div>
+                </button>
+
+                <!-- Mesa 1000 -->
+                <button onclick="joinTable(1000)" class="relative bg-[#e8e3d0] border border-stone-400 p-4 shadow-md flex items-center justify-between active:scale-95 transition-all text-left group hover:bg-[#e0dbc5]">
+                    <div class="absolute top-2 right-2 text-stone-500 opacity-20 text-3xl"><i class="fa-solid fa-crown"></i></div>
+                    <div class="flex flex-col relative z-10">
+                        <span class="font-typewriter font-bold text-stone-800 text-[12px] tracking-widest uppercase"><i class="fa-solid fa-crown text-stone-500 mr-2 group-hover:text-stone-800 transition-colors"></i>Ático del Capo</span>
+                        <span class="font-typewriter font-bold text-stone-600 text-[9px] mt-1 bg-stone-300/50 px-2 py-0.5 rounded-sm inline-block">Entrada: 1000G</span>
+                    </div>
+                    <div class="flex flex-col items-end border-l border-stone-400 pl-4 relative z-10">
+                        <span class="font-typewriter text-stone-500 text-[7px] tracking-widest uppercase mb-1">Pozo Total</span>
+                        <span class="font-display font-black text-green-700 text-2xl drop-shadow-sm leading-none">2000</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MERCADO NEGRO RESPONSIVO (Premium UI) -->
+    <div id="modal-market" class="modal-overlay fixed inset-0 flex flex-col items-center justify-center z-[200]">
+        <h2 class="font-display font-black text-3xl text-[var(--accent-color)] uppercase tracking-widest drop-shadow-md mb-2 text-center mt-4">Mercado Negro</h2>
+        <div class="text-stone-500 mb-8 font-typewriter text-[9px] text-center uppercase tracking-widest">Adquiere una Ventaja Táctica</div>
+        <!-- Contenedor adaptativo: evita el desbordamiento -->
+        <div id="market-cards" class="flex flex-row justify-center items-center gap-3 w-full px-4 max-w-lg mx-auto"></div>
+    </div>
+
+    <!-- MODALES FLOTANTES -->
+    <!-- Modal Ciclar -->
+    <div id="modal-cycle" class="modal-overlay fixed inset-0 flex items-center justify-center p-4 z-[200]">
+        <div class="bg-[#1a1715] rounded border border-stone-700 p-5 w-full max-w-sm relative flex flex-col max-h-[80vh] shadow-2xl">
+            <button onclick="closeCycle()" class="absolute top-3 right-4 text-stone-500 hover:text-stone-300 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="font-display font-black text-xl text-stone-300 uppercase tracking-widest mb-1 text-center">Ciclar Mano</h2>
+            <p class="text-[9px] font-typewriter text-stone-500 text-center mb-4 uppercase">Elige hasta 3 cartas para descartar</p>
+            <div class="flex flex-wrap gap-3 overflow-y-auto hide-scrollbar p-4 justify-center min-h-[150px]" id="cycle-grid"></div>
+            <button id="btn-confirm-cycle" onclick="confirmCycle()" class="w-full bg-[var(--accent-color)] text-black py-3 mt-2 rounded-sm font-typewriter font-bold uppercase tracking-widest active:scale-95 shadow-lg text-[12px] opacity-50 pointer-events-none transition-all">Descartar y Robar (<span id="cycle-count">0</span>/3)</button>
+        </div>
+    </div>
+
+    <!-- Modal Inspector de Ventajas -->
+    <div id="modal-inspector" class="modal-overlay fixed inset-0 flex items-center justify-center p-4 z-[200]">
+        <div class="bg-[#1a1715] rounded border border-stone-700 p-5 w-full max-w-sm relative flex flex-col max-h-[80vh] shadow-2xl">
+            <button onclick="closeInspector()" class="absolute top-3 right-4 text-stone-500 hover:text-stone-300 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="font-display font-black text-lg uppercase tracking-widest mb-3 text-center" id="inspector-title">Tus Ventajas</h2>
+            <div class="w-full bg-[#110f0e] rounded border border-stone-800 p-3 mb-4 shrink-0">
+                <div class="text-[9px] font-typewriter text-[var(--accent-color)] mb-2 uppercase font-bold text-center">Sinergias Ocultas</div>
+                <div class="flex justify-around text-[11px] font-typewriter font-bold mt-2" id="inspector-synergies"></div>
+                <div class="text-[7px] font-typewriter text-stone-500 space-y-1 mt-3"><div>🟡 3 = +1 Pto garantizado al ganar.</div><div>🔴 3 = +2 Ptos en Muerte Súbita.</div><div>🟣 3 = +1 Pto con cartas pares.</div><div>⚫ 3 = +1 Pto usando 3 cartas.</div></div>
+            </div>
+            <div class="w-full overflow-y-auto hide-scrollbar flex flex-col gap-2" id="inspector-list"></div>
+        </div>
+    </div>
+
+    <!-- Modal Almacén y Descarte -->
+    <div id="modal-almacen" class="modal-overlay fixed inset-0 flex flex-col bg-[var(--bg-color)] z-[200]">
+        <div class="w-full flex justify-between items-center p-4 border-b border-stone-800"><button onclick="closeAlmacen()" class="text-stone-400 hover:text-white text-2xl px-2"><i class="fa-solid fa-arrow-left"></i></button><h2 class="font-display font-black text-xl text-[var(--accent-color)] uppercase tracking-widest">Almacén</h2><div class="font-typewriter text-[12px] text-white font-bold bg-[#2a2624] px-3 py-1 rounded border border-[#3a3634]"><span id="almacen-gold">3000</span></div></div>
+        <div class="flex-1 overflow-y-auto hide-scrollbar p-6 flex flex-col items-center gap-6" id="skins-container"></div>
+    </div>
+    <div id="modal-discard" class="modal-overlay fixed inset-0 flex items-center justify-center p-4 z-[200]">
+        <div class="bg-[#1a1715] rounded border border-stone-700 p-5 w-full max-w-sm relative flex flex-col max-h-[80vh] shadow-2xl">
+            <button onclick="closeDiscard()" class="absolute top-3 right-4 text-stone-500 hover:text-stone-300 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="font-display font-black text-xl text-stone-300 uppercase tracking-widest mb-4 border-b border-stone-800 pb-2">Descarte</h2>
+            <div class="flex flex-wrap gap-3 overflow-y-auto hide-scrollbar p-2 justify-center" id="discard-grid"></div>
+        </div>
+    </div>
+    
+    <!-- Modal Tutorial -->
+    <div id="modal-tutorial" class="modal-overlay fixed inset-0 flex items-center justify-center p-4 z-[210] transition-opacity">
+        <div class="bg-[#1a1715] border border-[var(--accent-color)] rounded p-6 w-full max-w-sm relative flex flex-col shadow-[0_0_40px_rgba(181,139,76,0.3)]">
+            <h2 class="font-display font-black text-2xl text-[var(--accent-color)] uppercase tracking-widest mb-3 text-center" id="tut-title">Entrenamiento</h2>
+            <div class="text-[10px] font-typewriter text-stone-300 space-y-4 leading-relaxed mb-6 text-center" id="tutorial-text"></div>
+            <button id="btn-tut-action" class="w-full bg-[var(--accent-color)] text-black py-4 rounded-sm font-typewriter font-bold uppercase tracking-widest active:scale-95 shadow-lg text-[12px]">¡Entendido!</button>
+        </div>
+    </div>
+
+<script>
+    let gold = 3000;
+    let bDeckSize = 40;
+    let currentBet = 0; 
+    let pendingWinnings = 0; 
+    let currentSkinId = 'oficial';
+    let audioEnabled = false; let audioContext = null;
+    let bDeck = []; let bDiscard = []; let bHand = []; let bCapoHand = [];
+    let bPlayZone = []; let bCapoPlayZone = [];
+    let bScoreP1 = 0; let bScoreP2 = 0;
+    let bRound = 1; let bMaxRounds = 15;
+    let bTieBreakerActive = false;
+    let bTurnActive = false; let bTimerValue = 30; let bTimerInterval;
+    let playerPerks = []; let capoPerks = [];
+    let cycleSelection = []; let cycleUsedThisTurn = false;
+    let isTutorial = false; let tutorialStep = 0;
+
+    const skins = [
+        { id: 'oficial', name: 'Oficial', desc: 'Sello de la Reserva', price: 0, colorClass: 'skin-botin' },
+        { id: 'neon', name: 'Sindicato Neón', desc: 'Ciber-Hackeo', price: 500, colorClass: 'skin-neon' },
+        { id: 'noir', name: 'Casino Noir', desc: 'Foil VIP', price: 2000, colorClass: 'skin-noir' }
+    ];
+
+    const availablePerks = [
+        { id: 'a1', color: 'amarilla', name: 'Ahorro', desc: '+1 pt extra si ganas y tu apuesta suma $3 o menos.', icon: 'fa-piggy-bank' },
+        { id: 'a2', color: 'amarilla', name: 'Alta Gama', desc: '+1 pt extra si ganas y tu apuesta suma $6 o más.', icon: 'fa-arrow-up-right-dots' },
+        { id: 'a3', color: 'amarilla', name: 'Balanza', desc: '+1 pt extra si ganas y tu apuesta suma $4 o $5.', icon: 'fa-scale-balanced' },
+        { id: 'a4', color: 'amarilla', name: 'Calderilla', desc: '+1 pt extra si ganas usando al menos un billete de $1.', icon: 'fa-1' },
+        { id: 'a5', color: 'amarilla', name: 'Oro Puro', desc: '+1 pt extra si ganas usando al menos un billete de $4.', icon: 'fa-4' },
+        { id: 'r1', color: 'roja', name: 'Remontada', desc: '+1 pt extra si ganas la ronda mientras vas perdiendo en el marcador.', icon: 'fa-arrow-turn-up' },
+        { id: 'r2', color: 'roja', name: 'Mano Rápida', desc: '+1 pt extra si ganas confirmando en los primeros 10 segundos.', icon: 'fa-bolt' },
+        { id: 'r3', color: 'roja', name: 'Muro', desc: '+1 pt extra si ganas una ronda de Muerte Súbita.', icon: 'fa-brick' },
+        { id: 'r4', color: 'roja', name: 'Agresor', desc: '+1 pt extra si el valor de tu billete más alto supera al suyo.', icon: 'fa-hand-fist' },
+        { id: 'r5', color: 'roja', name: 'Arrogancia', desc: '+1 pt extra si ganas la ronda mientras vas ganando en el marcador.', icon: 'fa-crown' },
+        { id: 'v1', color: 'violeta', name: 'El Vidente', desc: '+1 pt extra si ganas y la suma total de tu oponente es $4 o más.', icon: 'fa-eye' },
+        { id: 'v2', color: 'violeta', name: 'Opositor Impar', desc: '+1 pt extra si ganas y la apuesta total de tu oponente es impar.', icon: 'fa-divide' },
+        { id: 'v3', color: 'violeta', name: 'Opositor Par', desc: '+1 pt extra si ganas y la apuesta total de tu oponente es par.', icon: 'fa-equals' },
+        { id: 'v4', color: 'violeta', name: 'Doble Engaño', desc: '+1 pt extra si ganas y jugaste exactamente 2 cartas.', icon: 'fa-clone' },
+        { id: 'v5', color: 'violeta', name: 'Poco a Poco', desc: '+1 pt extra si el billete más alto jugado por tu oponente es $1 o $2.', icon: 'fa-stairs' },
+        { id: 'n1', color: 'negra', name: 'Lobo Solitario', desc: '+1 pt extra si ganas usando exactamente 1 carta.', icon: 'fa-user' },
+        { id: 'n2', color: 'negra', name: 'Suma Impar', desc: '+1 pt extra si ganas y la suma total de tu apuesta es impar.', icon: 'fa-hashtag' },
+        { id: 'n3', color: 'negra', name: 'Suma Par', desc: '+1 pt extra si ganas y la suma total de tu apuesta es par.', icon: 'fa-check-double' },
+        { id: 'n4', color: 'negra', name: 'Coleccionista', desc: '+1 pt extra si ganas usando cartas de valores distintos.', icon: 'fa-shapes' },
+        { id: 'n5', color: 'negra', name: 'Sindicato', desc: '+1 pt extra si ganas y TODAS las cartas que jugaste son del mismo valor.', icon: 'fa-users' }
+    ];
+
+    const sfx = {
+        play: (f, t, type='sine', vol=0.1) => {
+            if(!audioEnabled || !audioContext) return;
+            const osc = audioContext.createOscillator(); const gain = audioContext.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(f, audioContext.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(f/2, audioContext.currentTime + t);
+            gain.gain.setValueAtTime(vol, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + t);
+            osc.connect(gain); gain.connect(audioContext.destination); osc.start(); osc.stop(audioContext.currentTime + t);
+        },
+        playCard: () => sfx.play(300, 0.1, 'triangle', 0.05),
+        playShuffle: () => { if(!audioEnabled || !audioContext) return; let t = 0; for(let i=0; i<5; i++) { setTimeout(() => sfx.play(400 + Math.random()*200, 0.05, 'noise', 0.05), t); t += 40; } },
+        playDrop: () => sfx.play(150, 0.2, 'square', 0.1),
+        playWin: () => { sfx.play(400, 0.1, 'sine', 0.1); setTimeout(() => sfx.play(600, 0.3, 'sine', 0.1), 100); },
+        playLose: () => { sfx.play(300, 0.2, 'sawtooth', 0.1); setTimeout(() => sfx.play(200, 0.4, 'sawtooth', 0.1), 200); },
+        playAlarm: () => { sfx.play(800, 0.3, 'square', 0.1); setTimeout(() => sfx.play(800, 0.3, 'square', 0.1), 400); }
+    };
+
+    function initAudio() { if (!audioContext) { audioContext = new (window.AudioContext || window.webkitAudioContext)(); audioEnabled = true; updateAudioIcons(true); } }
+    function toggleAudio() {
+        if(!audioContext) initAudio();
+        else { if (audioContext.state === 'suspended') { audioContext.resume(); audioEnabled = true; updateAudioIcons(true); } else { audioContext.suspend(); audioEnabled = false; updateAudioIcons(false); } }
+    }
+    function updateAudioIcons(on) {
+        const icon = on ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark text-stone-400"></i>';
+        document.getElementById('btn-audio').innerHTML = icon; document.getElementById('btn-audio-board').innerHTML = icon;
+    }
+    document.addEventListener('pointerdown', () => { if(!audioContext && !document.getElementById('lobby-screen').classList.contains('hidden')) initAudio(); }, {once: true});
+
+    function updateLobbyGold() { 
+        const lobbyEl = document.getElementById('lobby-gold');
+        lobbyEl.innerText = gold; document.getElementById('almacen-gold').innerText = gold;
+        lobbyEl.classList.add('text-green-400', 'scale-125');
+        setTimeout(() => lobbyEl.classList.remove('text-green-400', 'scale-125'), 300);
+    }
+    
+    function openMesas() { sfx.playDrop(); document.getElementById('modal-mesas').classList.add('active'); }
+    function closeMesas() { sfx.playDrop(); document.getElementById('modal-mesas').classList.remove('active'); }
+    
+    function playCoinAnimation(fromId, toId, amount, callback) {
+        const startEl = document.getElementById(fromId);
+        const endEl = document.getElementById(toId);
+        if(!startEl || !endEl) { if(callback) callback(); return; }
+        
+        const startRect = startEl.getBoundingClientRect();
+        const endRect = endEl.getBoundingClientRect();
+        
+        const startX = startRect.left + startRect.width / 2;
+        const startY = startRect.top + startRect.height / 2;
+        const endX = endRect.left + endRect.width / 2;
+        const endY = endRect.top + endRect.height / 2;
+        
+        let numCoins = 5;
+        if(amount >= 500) numCoins = 10;
+        if(amount >= 1000) numCoins = 15;
+        if(amount >= 2000) numCoins = 20;
+        
+        for(let i=0; i<numCoins; i++) {
+            const coin = document.createElement('div');
+            coin.innerHTML = '<i class="fa-solid fa-coins text-yellow-500 drop-shadow-md text-2xl"></i>';
+            coin.style.position = 'absolute'; coin.style.zIndex = '300'; coin.style.pointerEvents = 'none';
+            coin.style.transition = 'all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)'; 
+            coin.style.left = startX + 'px'; coin.style.top = startY + 'px';
+            
+            const offsetX = (Math.random() - 0.5) * 80;
+            const offsetY = (Math.random() - 0.5) * 80;
+            coin.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(0)`;
+            coin.style.opacity = '1';
+            
+            document.body.appendChild(coin);
+            
+            setTimeout(() => { coin.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(1.2)`; }, 10);
+            setTimeout(() => {
+                coin.style.left = endX + 'px'; coin.style.top = endY + 'px';
+                coin.style.transform = 'translate(0,0) scale(0.5)';
+                coin.style.opacity = '0';
+                if(i % 3 === 0) sfx.playCard(); 
+            }, 300 + (i * 50)); 
+            
+            setTimeout(() => coin.remove(), 1000 + (i * 50));
+        }
+        if(callback) { setTimeout(callback, 500 + (numCoins * 50)); }
+    }
+
+    function joinTable(cost) {
+        if (gold >= cost) {
+            sfx.playDrop();
+            closeMesas();
+            playCoinAnimation('wallet-container', 'btn-mesas-card', cost, () => {
+                gold -= cost;
+                updateLobbyGold();
+                currentBet = cost;
+                selectDeck(40); 
+                startGame();
+            });
+        } else {
+            sfx.playLose();
+            const title = document.querySelector('#modal-mesas h2');
+            const ogText = title.innerHTML;
+            title.innerHTML = "FONDOS<br>INSUFICIENTES"; title.classList.replace('text-stone-900', 'text-red-700');
+            setTimeout(() => { title.innerHTML = ogText; title.classList.replace('text-red-700', 'text-stone-900'); }, 1500);
+        }
+    }
+
+    window.msgTimeout = null;
+    // MODIFICADO: Acepta "isGreen" para las victorias en el Timeline
+    function msg(title, desc='', duration=2500, isRed=false, isOrange=false, isGreen=false) {
+        const pill = document.getElementById('timeline-pill'); const text = document.getElementById('timeline-text');
+        let colorClass = 'bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]';
+        
+        if (isRed) colorClass = 'bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)] text-white border-2 border-red-400';
+        else if (isOrange) colorClass = 'bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)] text-white border-2 border-orange-300';
+        else if (isGreen) colorClass = 'bg-green-600 shadow-[0_0_15px_rgba(22,163,74,0.5)] text-white border-2 border-green-400';
+
+        pill.className = `px-5 py-2 rounded-full text-black text-[9px] font-typewriter font-bold uppercase tracking-widest z-10 flex items-center justify-center transition-all duration-300 min-w-[140px] ${colorClass}`;
+        text.innerHTML = desc ? `${title} <span class="bg-black/30 px-2 py-0.5 rounded ml-2 opacity-90">${desc}</span>` : title;
+
+        clearTimeout(window.msgTimeout);
+        window.msgTimeout = setTimeout(() => {
+            pill.className = "px-5 py-2 rounded-full bg-[var(--accent-color)] text-black text-[9px] font-typewriter font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(181,139,76,0.3)] z-10 flex items-center justify-center transition-all duration-300 min-w-[140px]";
+            text.innerHTML = bTurnActive ? `TU TURNO <span id="b-timer" class="bg-black/20 px-2 py-1 rounded ml-1">${bTimerValue}s</span>` : "ESPERANDO...";
+        }, duration);
+    }
+
+    function showSum(pVal, cVal) {
+        const capoArea = document.getElementById('b-capo-play').parentElement;
+        const playerArea = document.getElementById('b-player-play').parentElement;
+        
+        const cEl = document.createElement('div');
+        cEl.className = 'absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center bg-[#1a1715] px-2 py-1 rounded border-2 border-red-800 shadow-[0_0_15px_rgba(153,27,27,0.5)] pop-in z-50';
+        cEl.innerHTML = `<span class="text-red-500 text-[8px] font-typewriter font-bold uppercase mb-0.5">Capo</span><span class="text-white font-display font-black text-xl leading-none">$${cVal}</span>`;
+        
+        const pEl = document.createElement('div');
+        pEl.className = 'absolute left-4 top-1/2 -translate-y-1/2 flex flex-col items-center bg-[#1a1715] px-2 py-1 rounded border-2 border-[var(--accent-color)] shadow-[0_0_15px_rgba(181,139,76,0.5)] pop-in z-50';
+        pEl.innerHTML = `<span class="text-[var(--accent-color)] text-[8px] font-typewriter font-bold uppercase mb-0.5">Tú</span><span class="text-white font-display font-black text-xl leading-none">$${pVal}</span>`;
+        
+        capoArea.appendChild(cEl); playerArea.appendChild(pEl);
+        return [pEl, cEl];
+    }
+
+    const backDesignHTML = (colorClass) => `<div class="w-full h-full ${colorClass}-back ${colorClass}-border border-2 rounded-md shadow-md flex flex-col items-center justify-center relative overflow-hidden bg-[#1a1715]">
+        <div class="absolute inset-0 w-full h-full opacity-40 mix-blend-screen" style="background-image: url('180178.png'); background-size: contain; background-position: center; background-repeat: no-repeat; filter: brightness(1.5) sepia(1) hue-rotate(15deg) saturate(2);"></div>
+        <div class="relative z-10 transform -rotate-[15deg] flex flex-col items-center drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+            <div class="font-display font-black text-[var(--accent-color)] text-[8px] leading-[1.1] tracking-[0.2em] uppercase text-center bg-black/70 px-2 py-0.5 rounded border border-white/10" style="text-shadow: 1px 1px 0 #000;">Último<br>Botín</div>
+        </div>
+    </div>`;
+
+    function selectDeck(size) {
+        sfx.playCard(); bDeckSize = size;
+        document.getElementById('stamp-40').classList.add('hidden'); document.getElementById('stamp-60').classList.add('hidden');
+        document.getElementById(`stamp-${size}`).classList.remove('hidden');
+    }
+
+    function openAlmacen() { sfx.playDrop(); document.getElementById('modal-almacen').classList.add('active'); renderSkins(); }
+    function closeAlmacen() { sfx.playDrop(); document.getElementById('modal-almacen').classList.remove('active'); }
+
+    function renderSkins() { /* Intacto */ }
+    function buySkin(id, price) { if(gold >= price) { sfx.playWin(); gold -= price; localStorage.setItem(`skin_${id}`, 'true'); equipSkin(id); updateLobbyGold(); } else { sfx.playLose(); msg('Fondos Insuficientes', '', 1500, true); } }
+    function equipSkin(id) { sfx.playCard(); currentSkinId = id; renderSkins(); }
+
+    function createCardElement(card, faceUp, isBotCard = false, isMarketCard = false) {
+        const el = document.createElement('div');
+        
+        if (isMarketCard) {
+            el.className = `flex-1 min-w-[90px] max-w-[120px] rounded-xl cursor-pointer hover:-translate-y-2 active:scale-95 transition-all relative snap-center shadow-2xl shrink-0`;
+            el.style.aspectRatio = '1 / 1.55';
+            
+            let bgGrad, text, border, synText, shadow;
+            if(card.color === 'amarilla') { bgGrad = 'from-yellow-700 to-yellow-950'; text = 'text-yellow-400'; border = 'border-yellow-600/50'; synText = 'CODICIA'; shadow = 'shadow-[0_10px_25px_rgba(202,138,4,0.3)]'; }
+            else if(card.color === 'roja') { bgGrad = 'from-red-800 to-red-950'; text = 'text-red-400'; border = 'border-red-600/50'; synText = 'BRUTALIDAD'; shadow = 'shadow-[0_10px_25px_rgba(220,38,38,0.3)]'; }
+            else if(card.color === 'violeta') { bgGrad = 'from-purple-800 to-purple-950'; text = 'text-purple-400'; border = 'border-purple-600/50'; synText = 'ILUSIÓN'; shadow = 'shadow-[0_10px_25px_rgba(147,51,234,0.3)]'; }
+            else { bgGrad = 'from-stone-700 to-stone-900'; text = 'text-stone-300'; border = 'border-stone-500/50'; synText = 'SINDICATO'; shadow = 'shadow-[0_10px_25px_rgba(120,113,108,0.3)]'; }
+
+            el.innerHTML = `
+                <div class="absolute inset-0 bg-gradient-to-br ${bgGrad} border border-white/10 rounded-xl overflow-hidden ${shadow}">
+                    <div class="absolute inset-0 opacity-30 mix-blend-color-burn" style="background-image: repeating-linear-gradient(45deg, #000 0, #000 2px, transparent 2px, transparent 4px);"></div>
+                    <div class="absolute inset-0 shadow-[inset_0_0_30px_rgba(0,0,0,0.8)] pointer-events-none"></div>
+                    
+                    <div class="relative h-full flex flex-col items-center p-1.5 pt-0">
+                        <div class="bg-black/80 border border-t-0 ${border} text-[5px] font-typewriter font-bold ${text} uppercase tracking-widest px-3 py-0.5 rounded-b shadow-[0_2px_5px_rgba(0,0,0,0.5)] mb-1 drop-shadow-[0_0_5px_currentColor]">${synText}</div>
+                        
+                        <div class="flex-1 flex flex-col items-center justify-center w-full z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                            <i class="fa-solid ${card.icon} text-3xl mb-1.5 ${text} filter brightness-110"></i>
+                            <div class="text-[7.5px] font-display font-black uppercase tracking-widest ${text} text-center leading-tight mb-2 px-1 w-full">${card.name}</div>
+                        </div>
+                        
+                        <div class="w-full bg-black/50 backdrop-blur-sm rounded border border-white/10 p-2 min-h-[50px] flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_2px_5px_rgba(0,0,0,0.5)] z-10 mb-0.5">
+                            <div class="text-[5.5px] font-typewriter tracking-wide text-stone-200 text-center leading-relaxed drop-shadow-md">${card.desc}</div>
+                        </div>
+                    </div>
+                </div>`;
+            return el;
+        }
+
+        el.className = `card`;
+        let cardBgClass = 'skin-botin-bg'; let cardBorderClass = 'skin-botin-border'; let cardTextClass = 'skin-botin-text'; let cardShadowClass = 'skin-botin-shadow';
+        let cardBackClass = 'skin-botin-back';
+
+        if (!isBotCard) {
+            const s = skins.find(x => x.id === currentSkinId);
+            if(s) { cardBgClass = `${s.colorClass}-bg`; cardBorderClass = `${s.colorClass}-border`; cardTextClass = `${s.colorClass}-text`; cardShadowClass = `${s.colorClass}-shadow`; cardBackClass = `${s.colorClass}-back`; }
+        }
+
+        if (faceUp) {
+            let name = 'Billetes';
+            if (card.val === 3) name = 'Bolsa'; if (card.val === 4) name = 'Lingote'; if (card.val === 5) name = 'Maletín'; if (card.val === 6) name = 'Diamante';
+            el.innerHTML = `
+            <div class="absolute inset-0 w-full h-full rounded-md border-2 ${cardBgClass} ${cardBorderClass} ${cardShadowClass} flex flex-col justify-between items-center py-1 overflow-hidden z-10">
+                <div class="text-[6px] font-typewriter font-bold ${cardTextClass} uppercase opacity-80 tracking-widest bg-black/20 px-3 py-0.5 rounded-sm w-[90%] text-center mt-1">Efectivo</div>
+                <div class="flex items-center justify-center flex-1 w-full relative h-[45px]">
+                    <span class="absolute left-1 top-2 text-sm ${cardTextClass} font-bold opacity-70">$</span>
+                    <span class="font-display font-black text-[4.2rem] ${cardTextClass} drop-shadow-md tracking-tighter leading-[0.8]">${card.val}</span>
+                </div>
+                <div class="text-[5px] font-typewriter ${cardTextClass} uppercase opacity-60 tracking-widest border-t border-white/20 pt-1 w-3/4 text-center mb-1">${name}</div>
+            </div>`;
+        } else {
+            el.innerHTML = backDesignHTML(cardBackClass);
+        }
+        return el;
+    }
+
+    function createDeck() { let deck = []; const vals = bDeckSize === 60 ? [1,2,3,4,5,6] : [1,2,3,4]; vals.forEach(v => { for(let i=0; i<10; i++) deck.push({id: `v${v}_${i}`, val: v}); }); return deck.sort(() => 0.5 - Math.random()); }
+
+    function startGame(isFreeMatch = false) {
+        if(isFreeMatch) { currentBet = 0; } 
+        sfx.playShuffle(); document.getElementById('lobby-screen').classList.add('hidden'); document.getElementById('game-board').classList.remove('hidden');
+        isTutorial = false; document.getElementById('perks-p1-container').style.display = bDeckSize === 40 ? 'block' : 'none'; document.getElementById('perks-p2-container').style.display = bDeckSize === 40 ? 'block' : 'none';
+        bDeck = createDeck(); bDiscard = []; bHand = []; bCapoHand = []; bPlayZone = []; bCapoPlayZone = [];
+        bScoreP1 = 0; bScoreP2 = 0; bRound = 1; bMaxRounds = bDeckSize === 40 ? 15 : 999; playerPerks = []; capoPerks = []; bTieBreakerActive = false; pendingWinnings = 0;
+        updateUI(); startRound();
+    }
+
+    function surrender() { 
+        document.getElementById('game-board').classList.add('hidden'); 
+        document.getElementById('lobby-screen').classList.remove('hidden'); 
+        stopTimer(); 
+        currentBet = 0; 
+        
+        if (pendingWinnings > 0) {
+            setTimeout(() => {
+                playCoinAnimation('btn-mesas-card', 'wallet-container', pendingWinnings, () => {
+                    gold += pendingWinnings;
+                    updateLobbyGold();
+                    pendingWinnings = 0;
+                });
+            }, 500); 
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('b-score-p1').innerText = bScoreP1; document.getElementById('b-score-p2').innerText = bScoreP2;
+        document.getElementById('b-round-counter').innerText = bRound; document.getElementById('b-round-total').innerText = bDeckSize === 40 ? '15' : '∞';
+        document.getElementById('b-deck-count').innerText = bDeck.length; document.getElementById('b-discard-count').innerText = bDiscard.length;
+        document.getElementById('b-capo-hand-count').innerText = bCapoHand.length;
+        document.getElementById('inspector-p1-count').innerText = `(${playerPerks.length})`; document.getElementById('inspector-p2-count').innerText = `(${capoPerks.length})`;
+        
+        const skinC = skins.find(x => x.id === currentSkinId);
+        document.getElementById('visual-deck-container').innerHTML = backDesignHTML(skinC.colorClass);
+        const vdt = document.getElementById('visual-discard-top');
+        if (bDiscard.length > 0) { vdt.innerHTML = backDesignHTML('skin-botin'); vdt.classList.remove('opacity-30'); } 
+        else { vdt.innerHTML = `<div class="w-full h-full border-2 border-dashed border-stone-600 rounded-md bg-transparent flex items-center justify-center"><i class="fa-solid fa-inbox opacity-30 text-2xl text-stone-500"></i></div>`; vdt.classList.add('opacity-30'); }
+        if(bTieBreakerActive) { document.getElementById('game-board').classList.add('pulse-red'); } else { document.getElementById('game-board').classList.remove('pulse-red'); }
+    }
+
+    function dealToLimit(targetArr, limit) {
+        let needed = limit - targetArr.length;
+        for(let i=0; i<needed; i++) {
+            if(bDeck.length === 0) {
+                if(bDiscard.length > 0) { sfx.playShuffle(); msg('MEZCLANDO', 'Descarte reincorporado', 1500, false, true); bDeck = [...bDiscard].sort(() => 0.5 - Math.random()); bDiscard = []; updateUI(); } else break;
+            }
+            targetArr.push(bDeck.pop());
+        }
+    }
+
+    function startRound() {
+        bPlayZone = []; bCapoPlayZone = []; cycleUsedThisTurn = false;
+        document.getElementById('b-player-play').innerHTML = ''; document.getElementById('b-capo-play').innerHTML = '';
+        
+        let initialP1Length = bHand.length; let initialP2Length = bCapoHand.length;
+        if (!bTieBreakerActive) { dealToLimit(bHand, 5); dealToLimit(bCapoHand, 4); }
+        
+        updateUI(); renderHand(initialP1Length < bHand.length); renderCapoHand(initialP2Length < bCapoHand.length);
+        
+        const btnConfirm = document.getElementById('btn-b-confirm'); const btnCycle = document.getElementById('btn-b-cycle');
+        btnConfirm.classList.add('opacity-50', 'pointer-events-none'); btnCycle.classList.remove('opacity-50', 'pointer-events-none');
+        if(bTieBreakerActive || isTutorial) btnCycle.classList.add('opacity-50', 'pointer-events-none');
+        startTimer();
+    }
+
+    function startTimer() { 
+        bTurnActive = true; bTimerValue = 30;
+        const tt = document.getElementById('timeline-text'); tt.innerHTML = `TU TURNO <span id="b-timer" class="bg-black/20 px-2 py-1 rounded ml-1">${bTimerValue}s</span>`;
+        clearInterval(bTimerInterval); 
+        if(isTutorial) return;
+        bTimerInterval = setInterval(() => { bTimerValue--; const timerEl = document.getElementById('b-timer'); if(timerEl) timerEl.innerText = bTimerValue + 's'; if(bTimerValue <= 0) { confirmBotinacoPlay(); } }, 1000); 
+    }
+    function stopTimer() { bTurnActive = false; clearInterval(bTimerInterval); document.getElementById('timeline-text').innerHTML = "ESPERANDO..."; }
+
+    // HÍBRIDO (Drag&Drop magnético + Toque)
+    function attachHybridControls(el, c, i, isHand, baseX = 0, baseY = 0) {
+        let isDragging = false; let startX, startY; let moved = false; let ogTrans = '';
+        
+        el.onpointerdown = (e) => {
+            if(!bTurnActive || (isHand && bPlayZone.length >= 3)) return;
+            isDragging = true; moved = false; startX = e.clientX; startY = e.clientY;
+            ogTrans = el.style.transform;
+            el.setPointerCapture(e.pointerId); el.style.transition = 'none'; el.style.zIndex = 100;
+        };
+        el.onpointermove = (e) => {
+            if(!isDragging || !el.hasPointerCapture(e.pointerId) || !bTurnActive) return;
+            let dx = e.clientX - startX; let dy = e.clientY - startY;
+            if(Math.abs(dx) > 10 || Math.abs(dy) > 10) moved = true;
+            if(moved) {
+                el.style.transform = `translateX(${baseX + dx}px) translateY(${baseY + dy}px) scale(1.1) rotate(0deg)`;
+            }
+        };
+        el.onpointerup = (e) => {
+            if(!isDragging || !el.hasPointerCapture(e.pointerId)) return;
+            isDragging = false; el.releasePointerCapture(e.pointerId); el.style.transition = 'transform 0.2s';
+            
+            if(!moved) {
+                // TAP
+                sfx.playCard();
+                if(isHand) { bHand.splice(i, 1); bPlayZone.push(c); } else { bPlayZone.splice(i, 1); bHand.push(c); }
+                renderHand(); renderPlayZone(); checkConfirm();
+            } else {
+                // DRAG
+                const dropZone = document.getElementById(isHand ? 'b-player-play' : 'b-hand').getBoundingClientRect();
+                const isInsideDrop = e.clientY > dropZone.top - 50 && e.clientY < dropZone.bottom + 50;
+                if (isInsideDrop) {
+                    sfx.playCard();
+                    if(isHand) { bHand.splice(i, 1); bPlayZone.push(c); } else { bPlayZone.splice(i, 1); bHand.push(c); }
+                } else {
+                    el.style.transform = ogTrans; 
+                }
+                renderHand(); renderPlayZone(); checkConfirm();
+            }
+        };
+    }
+
+    function renderHand(isDeal = false) {
+        const hc = document.getElementById('b-hand'); hc.innerHTML = '';
+        const w = 75; const maxW = 320; const spacing = bHand.length > 1 ? Math.min(w + 5, (maxW - w) / (bHand.length - 1)) : 0;
+        
+        bHand.forEach((c, i) => {
+            const el = createCardElement(c, true); el.classList.add('absolute', 'bottom-0');
+            const offset = (i - (bHand.length-1)/2) * spacing; 
+            const rot = (i - (bHand.length-1)/2) * 6;
+            const yOffset = Math.abs(rot)*0.6;
+            el.style.transform = `translateX(${offset}px) translateY(${yOffset}px) rotate(${rot}deg)`; el.style.zIndex = i;
+            if(isDeal) { el.classList.add('deal-anim-hand'); el.style.animationDelay = `${i * 0.08}s`; }
+            
+            attachHybridControls(el, c, i, true, offset, yOffset);
+            hc.appendChild(el);
+        });
+    }
+
+    function renderPlayZone() {
+        const pz = document.getElementById('b-player-play'); pz.innerHTML = '';
+        bPlayZone.forEach((c, i) => { const el = createCardElement(c, true); attachHybridControls(el, c, i, false); pz.appendChild(el); });
+    }
+
+    function checkConfirm() {
+        const btn = document.getElementById('btn-b-confirm');
+        if (bPlayZone.length > 0) { btn.classList.remove('opacity-50', 'pointer-events-none'); } else { btn.classList.add('opacity-50', 'pointer-events-none'); }
+    }
+
+    function cycleHand() {
+        if(!bTurnActive || bTieBreakerActive || isTutorial || cycleUsedThisTurn) return;
+        sfx.playDrop(); cycleSelection = []; document.getElementById('cycle-count').innerText = '0';
+        document.getElementById('btn-confirm-cycle').classList.add('opacity-50', 'pointer-events-none');
+        
+        const grid = document.getElementById('cycle-grid'); grid.innerHTML = '';
+        bHand.forEach((c, i) => {
+            const el = createCardElement(c, true); el.style.transform = 'scale(0.8)'; el.style.margin = '-10px';
+            el.classList.add('transition-all', 'cursor-pointer'); 
+            
+            el.onpointerdown = (e) => { e.preventDefault(); toggleCycleCard(c, i, el); }; 
+            grid.appendChild(el);
+        });
+        document.getElementById('modal-cycle').classList.add('active');
+    }
+
+    function toggleCycleCard(c, i, el) {
+        const idx = cycleSelection.findIndex(x => x.index === i);
+        if (idx > -1) { cycleSelection.splice(idx, 1); el.classList.remove('-translate-y-4', 'ring-4', 'ring-[var(--accent-color)]', 'rounded-md'); } 
+        else { if (cycleSelection.length >= 3) return; cycleSelection.push({card: c, index: i}); el.classList.add('-translate-y-4', 'ring-4', 'ring-[var(--accent-color)]', 'rounded-md'); }
+        document.getElementById('cycle-count').innerText = cycleSelection.length;
+        const btn = document.getElementById('btn-confirm-cycle');
+        if (cycleSelection.length > 0) { btn.classList.remove('opacity-50', 'pointer-events-none'); } else { btn.classList.add('opacity-50', 'pointer-events-none'); }
+        sfx.playCard();
+    }
+    function closeCycle() { document.getElementById('modal-cycle').classList.remove('active'); }
+    function confirmCycle() {
+        sfx.playShuffle(); cycleSelection.sort((a, b) => b.index - a.index);
+        cycleSelection.forEach(item => { bDiscard.push(item.card); bHand.splice(item.index, 1); });
+        dealToLimit(bHand, bHand.length + cycleSelection.length); closeCycle(); renderHand(true);
+        cycleUsedThisTurn = true; document.getElementById('btn-b-cycle').classList.add('pointer-events-none', 'opacity-50'); updateUI();
+    }
+
+    function renderCapoHand(isDeal = false) {
+        if(!bTieBreakerActive && bCapoHand.length >= 2) { bCapoHand.sort((a,b) => b.val - a.val); bCapoPlayZone = [bCapoHand.shift(), bCapoHand.shift()]; } 
+        else if (bTieBreakerActive) { let plays = Math.min(2, bCapoHand.length); bCapoPlayZone = []; for(let i=0; i<plays; i++) bCapoPlayZone.push(bCapoHand.shift()); }
+        
+        const cp = document.getElementById('b-capo-play'); cp.innerHTML = '';
+        bCapoPlayZone.forEach((c, i) => {
+            const el = createCardElement(c, i === 0, true); 
+            if(isDeal) { el.classList.add('deal-anim-capo'); el.style.animationDelay = `${i * 0.1}s`; }
+            cp.appendChild(el);
+        });
+    }
+
+    function checkSynergy(perks, color) { return perks.filter(p => p.color === color).length >= 3; }
+
+    function inspectPerks(target) {
+        sfx.playDrop(); const isPlayer = target === 'player'; const perks = isPlayer ? playerPerks : capoPerks;
+        document.getElementById('inspector-title').innerText = isPlayer ? 'TUS VENTAJAS' : 'VENTAJAS DEL CAPO';
+        const list = document.getElementById('inspector-list'); list.innerHTML = '';
+        if(perks.length === 0) { list.innerHTML = '<div class="text-stone-500 font-typewriter text-[10px] text-center mt-4 uppercase">No hay ventajas equipadas.</div>'; } 
+        else {
+            perks.forEach(p => {
+                let pCol = p.color === 'amarilla' ? 'text-yellow-500' : p.color === 'roja' ? 'text-red-500' : p.color === 'violeta' ? 'text-purple-500' : 'text-white';
+                list.innerHTML += `<div class="bg-[#110f0e] border border-stone-800 p-2 rounded flex items-center gap-3"><i class="fa-solid ${p.icon} text-xl w-6 text-center ${pCol}"></i><div><div class="text-[10px] font-bold text-stone-300 uppercase">${p.name}</div><div class="text-[7px] text-stone-500 uppercase leading-snug">${p.desc}</div></div></div>`;
+            });
+        }
+        const syn = document.getElementById('inspector-synergies');
+        syn.innerHTML = `<div class="${checkSynergy(perks, 'amarilla') ? 'text-yellow-400 drop-shadow-md' : 'text-stone-600'}">🟡 ${perks.filter(p=>p.color==='amarilla').length}/3</div><div class="${checkSynergy(perks, 'roja') ? 'text-red-400 drop-shadow-md' : 'text-stone-600'}">🔴 ${perks.filter(p=>p.color==='roja').length}/3</div><div class="${checkSynergy(perks, 'violeta') ? 'text-purple-400 drop-shadow-md' : 'text-stone-600'}">🟣 ${perks.filter(p=>p.color==='violeta').length}/3</div><div class="${checkSynergy(perks, 'negra') ? 'text-white drop-shadow-md' : 'text-stone-600'}">⚫ ${perks.filter(p=>p.color==='negra').length}/3</div>`;
+        document.getElementById('modal-inspector').classList.add('active');
+    }
+    function closeInspector() { document.getElementById('modal-inspector').classList.remove('active'); }
+
+    // --- NUEVO SISTEMA DE ANIMACIÓN FLUIDA MULTICOLOR ---
+    function animateRoundScore(winner, diff, earnedPerks, callback) {
+        // 1. Iluminación Mitad de Pantalla
+        const glow = document.createElement('div');
+        glow.className = winner === 1 ? 'glow-half-player' : 'glow-half-capo';
+        document.getElementById('game-board').appendChild(glow);
+        setTimeout(() => glow.remove(), 2000);
+
+        // 2. Banner de Resolución en la Timeline
+        if (winner === 1) {
+            sfx.playWin();
+            msg('VICTORIA', `(DIF ${diff})`, 2500, false, false, true); // isGreen = true
+        } else {
+            sfx.playLose();
+            msg('DERROTA', `(DIF ${diff})`, 2500, true);
+        }
+
+        // 3. Obtener Coordenadas
+        const scoreEl = document.getElementById(winner === 1 ? 'b-score-p1' : 'b-score-p2');
+        const playZoneEl = document.getElementById(winner === 1 ? 'b-player-play' : 'b-capo-play');
+        const scoreContainer = scoreEl.closest('.bg-\\[\\#1a1a1a\\]');
+        
+        const scoreRect = scoreEl.getBoundingClientRect();
+        const playRect = playZoneEl.getBoundingClientRect();
+        
+        const destX = scoreRect.left + scoreRect.width / 2;
+        const destY = scoreRect.top + scoreRect.height / 2;
+
+        // Función Helper para Volar Puntos (Ahora acepta color custom)
+        const fly = (startX, startY, text, colorClass, delay, isPerk) => {
+            setTimeout(() => {
+                const pt = document.createElement('div');
+                pt.className = `flying-point ${colorClass}`;
+                pt.innerHTML = text;
+                pt.style.left = startX + 'px';
+                pt.style.top = startY + 'px';
+                pt.style.transform = 'translate(-50%, -50%) scale(0.5)';
+                document.body.appendChild(pt);
+
+                // Iniciar Vuelo
+                setTimeout(() => {
+                    pt.style.opacity = '1';
+                    pt.style.transform = 'translate(-50%, -50%) scale(1)';
+                    pt.style.left = destX + 'px';
+                    pt.style.top = destY + 'px';
+                    if(isPerk) sfx.playCard(); 
+                }, 50);
+
+                // Impacto en el Marcador
+                setTimeout(() => {
+                    pt.remove();
+                    if (winner === 1) { bScoreP1++; scoreEl.innerText = bScoreP1; }
+                    else { bScoreP2++; scoreEl.innerText = bScoreP2; }
+                    
+                    scoreContainer.classList.add('scale-110');
+                    scoreEl.classList.add(winner === 1 ? 'text-green-400' : 'text-red-500');
+                    
+                    setTimeout(() => {
+                        scoreContainer.classList.remove('scale-110');
+                        scoreEl.classList.remove('text-green-400', 'text-red-500');
+                    }, 200);
+                    sfx.playDrop();
+                }, 650);
+            }, delay);
+        };
+
+        // 4. Lanzar Punto Base (Desde las cartas jugadas)
+        const baseStartX = playRect.left + playRect.width / 2;
+        const baseStartY = playRect.top + playRect.height / 2;
+        fly(baseStartX, baseStartY, '+1', winner === 1 ? 'text-green-400' : 'text-red-500', 0, false);
+
+        // 5. Lanzar Puntos de Ventajas (MULTICOLOR desde el botón lateral)
+        let totalDelay = 800; 
+        if (earnedPerks && earnedPerks.length > 0) {
+            const perkEl = document.getElementById(winner === 1 ? 'btn-perks-p1' : 'btn-perks-p2');
+            let perkStartX = baseStartX, perkStartY = baseStartY;
+            if(perkEl) {
+                const perkRect = perkEl.getBoundingClientRect();
+                perkStartX = perkRect.left + perkRect.width / 2;
+                perkStartY = perkRect.top + perkRect.height / 2;
+            }
+            
+            earnedPerks.forEach((colorCode) => {
+                let colorClass = 'text-white';
+                if (colorCode === 'amarilla') colorClass = 'text-yellow-400';
+                if (colorCode === 'roja') colorClass = 'text-red-500';
+                if (colorCode === 'violeta') colorClass = 'text-purple-400';
+                if (colorCode === 'negra') colorClass = 'text-stone-300';
+                
+                fly(perkStartX, perkStartY, '+1', colorClass, totalDelay, true);
+                totalDelay += 250; 
+            });
+        }
+
+        // 6. Terminar Secuencia
+        setTimeout(callback, totalDelay + 800);
+    }
+
+    function finishRoundTransition() {
+        if (isTutorial && tutorialStep === 1) {
+            setTimeout(() => {
+                document.getElementById('modal-tutorial').classList.add('active');
+                document.getElementById('tut-title').innerHTML = '¡Muerte Súbita!';
+                document.getElementById('tutorial-text').innerHTML = `¡Quedaste EXACTAMENTE a 1 de diferencia!<br>Ganaste la ronda.<br><br>Si hubieses empatado ($5 vs $5), la mesa latiría en rojo y jugarías una ronda a muerte con las cartas que te quedan en mano.<br><br>Veamos el Mercado Negro.`;
+                const tutBtn = document.getElementById('btn-tut-action'); tutBtn.innerText = "Ir al Mercado";
+                tutBtn.onclick = () => { document.getElementById('modal-tutorial').classList.remove('active'); tutorialStep = 2; bDiscard.push(...bPlayZone, ...bCapoPlayZone); bPlayZone = []; bCapoPlayZone = []; openMarket(); };
+            }, 500);
+            return;
+        }
+
+        setTimeout(() => {
+            bDiscard.push(...bPlayZone, ...bCapoPlayZone); bPlayZone = []; bCapoPlayZone = []; 
+            document.getElementById('b-player-play').innerHTML = ''; document.getElementById('b-capo-play').innerHTML = '';
+            updateUI();
+            if (!bTieBreakerActive) bRound++;
+            
+            if (bRound > bMaxRounds && !bTieBreakerActive) { endGame(); } 
+            else if (!bTieBreakerActive && bDeckSize === 40 && (bRound-1) % 3 === 0 && bRound > 1) { openMarket(); } 
+            else { startRound(); }
+        }, 500);
+    }
+
+    function confirmBotinacoPlay() {
+        if(!bTurnActive) return; 
+        
+        if (isTutorial) {
+            let pVal = bPlayZone.reduce((a, b) => a + b.val, 0);
+            if (pVal !== 4 && tutorialStep === 1) { msg('ERROR', 'Suma exactamente $4 o $6', 2000, true); return; }
+        }
+
+        stopTimer(); closeCycle();
+        document.getElementById('btn-b-cycle').classList.add('pointer-events-none', 'opacity-50'); document.getElementById('btn-b-confirm').classList.add('pointer-events-none', 'opacity-50');
+
+        const cp = document.getElementById('b-capo-play');
+        if(cp.children.length > 1) { 
+            sfx.playCard(); const hiddenCard = bCapoPlayZone[1];
+            const newEl = createCardElement(hiddenCard, true, true);
+            cp.replaceChild(newEl, cp.children[1]);
+        }
+
+        let pVal = bPlayZone.reduce((a, b) => a + b.val, 0); let cVal = bCapoPlayZone.reduce((a, b) => a + b.val, 0);
+        let sumEls = showSum(pVal, cVal);
+        setTimeout(() => sfx.playDrop(), 200);
+
+        setTimeout(() => {
+            if(sumEls) sumEls.forEach(el => el.remove());
+            
+            const diff = Math.abs(pVal - cVal);
+
+            if (diff === 1) {
+                // PLAYER WINS: Evaluamos de qué color son los puntos
+                let earnedPerks = [];
+                if(playerPerks.find(p=>p.id==='a1') && pVal <= 3) earnedPerks.push('amarilla');
+                if(playerPerks.find(p=>p.id==='a2') && pVal >= 6) earnedPerks.push('amarilla');
+                if(playerPerks.find(p=>p.id==='a3') && (pVal === 4 || pVal === 5)) earnedPerks.push('amarilla');
+                if(playerPerks.find(p=>p.id==='a4') && bPlayZone.some(c=>c.val===1)) earnedPerks.push('amarilla');
+                if(playerPerks.find(p=>p.id==='a5') && bPlayZone.some(c=>c.val===4)) earnedPerks.push('amarilla');
+                if(playerPerks.find(p=>p.id==='r1') && bScoreP1 < bScoreP2) earnedPerks.push('roja');
+                if(playerPerks.find(p=>p.id==='r2') && bTimerValue >= 20) earnedPerks.push('roja');
+                if(playerPerks.find(p=>p.id==='r3') && bTieBreakerActive) earnedPerks.push('roja');
+                if(playerPerks.find(p=>p.id==='r4') && Math.max(...bPlayZone.map(c=>c.val)) > Math.max(...bCapoPlayZone.map(c=>c.val))) earnedPerks.push('roja');
+                if(playerPerks.find(p=>p.id==='r5') && bScoreP1 > bScoreP2) earnedPerks.push('roja');
+                if(playerPerks.find(p=>p.id==='v1') && cVal >= 4) earnedPerks.push('violeta');
+                if(playerPerks.find(p=>p.id==='v2') && cVal % 2 !== 0) earnedPerks.push('violeta');
+                if(playerPerks.find(p=>p.id==='v3') && cVal % 2 === 0) earnedPerks.push('violeta');
+                if(playerPerks.find(p=>p.id==='v4') && bPlayZone.length === 2) earnedPerks.push('violeta');
+                if(playerPerks.find(p=>p.id==='v5') && Math.max(...bCapoPlayZone.map(c=>c.val)) <= 2) earnedPerks.push('violeta');
+                if(playerPerks.find(p=>p.id==='n1') && bPlayZone.length === 1) earnedPerks.push('negra');
+                if(playerPerks.find(p=>p.id==='n2') && pVal % 2 !== 0) earnedPerks.push('negra');
+                if(playerPerks.find(p=>p.id==='n3') && pVal % 2 === 0) earnedPerks.push('negra');
+                if(playerPerks.find(p=>p.id==='n4') && new Set(bPlayZone.map(c=>c.val)).size === bPlayZone.length) earnedPerks.push('negra');
+                if(playerPerks.find(p=>p.id==='n5') && new Set(bPlayZone.map(c=>c.val)).size === 1) earnedPerks.push('negra');
+
+                if(checkSynergy(playerPerks, 'amarilla')) earnedPerks.push('amarilla');
+                if(checkSynergy(playerPerks, 'roja') && bTieBreakerActive) { earnedPerks.push('roja'); earnedPerks.push('roja'); }
+                if(checkSynergy(playerPerks, 'violeta') && new Set(bPlayZone.map(c=>c.val)).size !== bPlayZone.length) earnedPerks.push('violeta');
+                if(checkSynergy(playerPerks, 'negra') && bPlayZone.length === 3) earnedPerks.push('negra');
+
+                animateRoundScore(1, diff, earnedPerks, () => { bTieBreakerActive = false; finishRoundTransition(); });
+            } 
+            else if (diff > 1) {
+                // CAPO WINS: Evaluamos de qué color son los puntos
+                let earnedPerks = [];
+                if(capoPerks.find(p=>p.id==='a1') && cVal <= 3) earnedPerks.push('amarilla');
+                if(capoPerks.find(p=>p.id==='a2') && cVal >= 6) earnedPerks.push('amarilla');
+                if(capoPerks.find(p=>p.id==='a3') && (cVal === 4 || cVal === 5)) earnedPerks.push('amarilla');
+                if(capoPerks.find(p=>p.id==='a4') && bCapoPlayZone.some(c=>c.val===1)) earnedPerks.push('amarilla');
+                if(capoPerks.find(p=>p.id==='a5') && bCapoPlayZone.some(c=>c.val===4)) earnedPerks.push('amarilla');
+                if(capoPerks.find(p=>p.id==='r1') && bScoreP2 < bScoreP1) earnedPerks.push('roja');
+                if(capoPerks.find(p=>p.id==='r3') && bTieBreakerActive) earnedPerks.push('roja');
+                if(capoPerks.find(p=>p.id==='r4') && Math.max(...bCapoPlayZone.map(c=>c.val)) > Math.max(...bPlayZone.map(c=>c.val))) earnedPerks.push('roja');
+                if(capoPerks.find(p=>p.id==='r5') && bScoreP2 > bScoreP1) earnedPerks.push('roja');
+                if(capoPerks.find(p=>p.id==='v1') && pVal >= 4) earnedPerks.push('violeta');
+                if(capoPerks.find(p=>p.id==='v2') && pVal % 2 !== 0) earnedPerks.push('violeta');
+                if(capoPerks.find(p=>p.id==='v3') && pVal % 2 === 0) earnedPerks.push('violeta');
+                if(capoPerks.find(p=>p.id==='v4') && bCapoPlayZone.length === 2) earnedPerks.push('violeta');
+                if(capoPerks.find(p=>p.id==='v5') && Math.max(...bPlayZone.map(c=>c.val)) <= 2) earnedPerks.push('violeta');
+                if(capoPerks.find(p=>p.id==='n1') && bCapoPlayZone.length === 1) earnedPerks.push('negra');
+                if(capoPerks.find(p=>p.id==='n2') && cVal % 2 !== 0) earnedPerks.push('negra');
+                if(capoPerks.find(p=>p.id==='n3') && cVal % 2 === 0) earnedPerks.push('negra');
+                if(capoPerks.find(p=>p.id==='n4') && new Set(bCapoPlayZone.map(c=>c.val)).size === bCapoPlayZone.length) earnedPerks.push('negra');
+                if(capoPerks.find(p=>p.id==='n5') && new Set(bCapoPlayZone.map(c=>c.val)).size === 1) earnedPerks.push('negra');
+
+                if(checkSynergy(capoPerks, 'amarilla')) earnedPerks.push('amarilla');
+                if(checkSynergy(capoPerks, 'roja') && bTieBreakerActive) { earnedPerks.push('roja'); earnedPerks.push('roja'); }
+                if(checkSynergy(capoPerks, 'violeta') && new Set(bCapoPlayZone.map(c=>c.val)).size !== bCapoPlayZone.length) earnedPerks.push('violeta');
+                if(checkSynergy(capoPerks, 'negra') && bCapoPlayZone.length === 3) earnedPerks.push('negra');
+
+                animateRoundScore(2, diff, earnedPerks, () => { bTieBreakerActive = false; finishRoundTransition(); });
+            } 
+            else {
+                // TIE
+                if (bTieBreakerActive) {
+                    // Si empatan en muerte súbita, gana el capo (Dif 0)
+                    animateRoundScore(2, 0, [], () => { bTieBreakerActive = false; finishRoundTransition(); });
+                } else {
+                    sfx.playAlarm(); msg('EMPATE CRÍTICO', 'Muerte Súbita', 2000, false, true); 
+                    bTieBreakerActive = true;
+                    setTimeout(() => finishRoundTransition(), 2500);
+                }
+            }
+        }, 2000); 
+    }
+
+    function endGame() {
+        let winnings = 0;
+        if(bScoreP1 > bScoreP2) { 
+            winnings = currentBet > 0 ? currentBet * 2 : 200; 
+            sfx.playWin(); 
+            msg('¡VICTORIA!', `+${winnings} Oro`, 4000); 
+        }
+        else if(bScoreP2 > bScoreP1) { 
+            winnings = 0;
+            sfx.playLose(); 
+            msg('DERROTA', 'El Capo se queda todo.', 4000, true); 
+        }
+        else { 
+            winnings = currentBet > 0 ? currentBet : 50; 
+            sfx.playAlarm(); 
+            msg('TABLAS', currentBet > 0 ? 'Recuperas entrada' : 'Empate', 4000, false, true); 
+        }
+        
+        pendingWinnings = winnings;
+        setTimeout(surrender, 4000);
+    }
+
+    function openMarket() {
+        sfx.playDrop(); stopTimer();
+        const modal = document.getElementById('modal-market'); const container = document.getElementById('market-cards'); container.innerHTML = '';
+        let avail = availablePerks.filter(p => !playerPerks.find(x=>x.id===p.id) && !capoPerks.find(x=>x.id===p.id));
+        let shuffled = avail.sort(() => 0.5 - Math.random()); let choices = shuffled.slice(0, 3);
+        choices.forEach((perk) => {
+            const cardEl = createCardElement(perk, true, false, true); cardEl.onclick = () => selectMarketPerk(perk, choices); container.appendChild(cardEl);
+        });
+        modal.classList.add('active');
+    }
+
+    function selectMarketPerk(chosenPerk, choices) {
+        sfx.playWin(); playerPerks.push(chosenPerk);
+        let rem = choices.filter(p => p.id !== chosenPerk.id); capoPerks.push(rem[Math.floor(Math.random() * rem.length)]);
+        document.getElementById('modal-market').classList.remove('active'); 
+        if (isTutorial && tutorialStep === 2) { gold += 1000; updateLobbyGold(); msg('TUTORIAL COMPLETADO', '+1000 Oro', 3000); setTimeout(() => surrender(), 3000); return; }
+        msg('VENTAJA ADQUIRIDA', '', 2000); updateUI(); startRound();
+    }
+
+    function showDiscard() {
+        if(bDiscard.length === 0) return;
+        sfx.playDrop(); document.getElementById('modal-discard').classList.add('active');
+        const grid = document.getElementById('discard-grid'); grid.innerHTML = '';
+        [...bDiscard].reverse().forEach(c => { const el = createCardElement(c, true, true); el.style.transform = 'scale(0.8)'; el.classList.remove('card'); el.classList.add('pointer-events-none'); grid.appendChild(el); });
+    }
+    function closeDiscard() { document.getElementById('modal-discard').classList.remove('active'); }
+
+    function startTutorial() {
+        sfx.playShuffle(); isTutorial = true; tutorialStep = 1;
+        document.getElementById('lobby-screen').classList.add('hidden'); document.getElementById('game-board').classList.remove('hidden');
+        document.getElementById('perks-p1-container').style.display = 'block'; document.getElementById('perks-p2-container').style.display = 'block';
+        bDeck = createDeck(); bDiscard = []; bHand = []; bCapoHand = []; bPlayZone = []; bCapoPlayZone = []; bScoreP1 = 0; bScoreP2 = 0; bRound = 1; bMaxRounds = 15;
+        updateUI();
+        bHand = [{val:1}, {val:2}, {val:2}, {val:3}, {val:4}]; bCapoHand = [{val:1}, {val:4}];
+
+        document.getElementById('modal-tutorial').classList.add('active');
+        document.getElementById('tut-title').innerHTML = '<i class="fa-solid fa-graduation-cap mr-2"></i> Entrenamiento';
+        document.getElementById('tutorial-text').innerHTML = `El Capo ha jugado sus cartas.<br>Suma $5 en total ($1 visible y $4 oculto).<br><br><b>REGLA DE ORO: Ganas si quedas EXACTAMENTE a +1 o -1 de diferencia.</b> Si la diferencia es mayor, él gana. Si empatan, Muerte Súbita.<br><br>Toca tus cartas. Suma exactamente $4 o $6 para Ganar.`;
+        
+        const tutBtn = document.getElementById('btn-tut-action'); tutBtn.innerText = "¡Probar Jugada!";
+        tutBtn.onclick = () => {
+            sfx.playDrop(); document.getElementById('modal-tutorial').classList.remove('active');
+            renderHand(); renderCapoHand(); bTurnActive = true;
+            document.getElementById('timeline-text').innerHTML = `TU TURNO <span id="b-timer" class="bg-black/20 px-2 py-1 rounded ml-1">∞</span>`;
+            document.getElementById('btn-b-cycle').classList.add('pointer-events-none', 'opacity-50');
+        };
+    }
+
+    renderSkins(); updateLobbyGold(); selectDeck(40);
+</script>
+</body>
+</html>
